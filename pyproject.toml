@@ -1,0 +1,44 @@
+[project]
+name = "caregiver-os"
+version = "2026.5.24"
+description = "Open-source coordination OS for caregivers of an aging parent or disabled family member."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.12"
+authors = [
+  { name = "Vlad Bordei", email = "bordeivlad@gmail.com" }
+]
+keywords = ["caregiver", "elderly-care", "healthcare", "ai", "agent", "mcp"]
+dependencies = [
+  "pydantic>=2.7",
+  "typer>=0.12",
+  "fastapi>=0.115",
+  "uvicorn>=0.30",
+  "sqlalchemy>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "pytest-asyncio>=0.24",
+  "httpx>=0.27",
+  "ruff>=0.6",
+]
+
+[project.scripts]
+caregiver-os = "caregiver_os.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/p-vbordei/research_capabilities"
+Source = "https://github.com/p-vbordei/research_capabilities"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/caregiver_os"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
