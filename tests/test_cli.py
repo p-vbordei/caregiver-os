@@ -30,7 +30,7 @@ def test_init_writes_recipient(runner: CliRunner, tmp_path: Path) -> None:
     assert result.exit_code == 0, result.output
     assert "Initialized" in result.output
     # File persisted
-    assert (tmp_path / "recipient.json").exists()
+    assert (tmp_path / "store.sqlite").exists()
 
 
 def test_meds_add_adds_med(runner: CliRunner) -> None:

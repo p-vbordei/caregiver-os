@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, time
+from datetime import datetime, time, timezone
 from typing import Literal
 from uuid import UUID, uuid4
 
@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 
 def _now() -> datetime:
-    return datetime.now()
+    return datetime.now(timezone.utc)
 
 
 class CareRecipient(BaseModel):
@@ -44,8 +44,8 @@ class Appointment(BaseModel):
     created_at: datetime = Field(default_factory=_now)
 
 
-IncidentKind = Literal["fall", "confusion", "missed_meal", "medication_refusal", "other"]
-IncidentSeverity = Literal["info", "warning", "alert"]
+IncidentKind = str
+IncidentSeverity = str
 
 
 class Incident(BaseModel):

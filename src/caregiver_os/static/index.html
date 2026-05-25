@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Caregiver OS - A premium, local-first coordinator for family caregiver workflows.">
+    <title>Caregiver OS Dashboard</title>
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Top premium navigation bar -->
+    <header class="app-header">
+        <div class="header-logo">
+            <span class="logo-icon">🛡️</span>
+            <h1>Caregiver OS</h1>
+        </div>
+        
+        <div class="recipient-badge" id="recipient-badge-container">
+            <span class="badge-dot"></span>
+            <span id="active-recipient-label">No Recipient</span>
+        </div>
+
+        <div class="header-actions">
+            <!-- Language Selector -->
+            <button id="btn-lang-toggle" class="btn btn-secondary btn-icon" title="Switch Language">
+                🌐 <span id="lang-label">RO</span>
+            </button>
+
+            <!-- Active Profile Dropdown -->
+            <div class="profile-dropdown">
+                <button id="btn-profile-select" class="btn btn-secondary">
+                    👤 <span id="current-profile-label">Caregiver</span>
+                </button>
+                <div id="profile-dropdown-content" class="dropdown-content">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="app-sidebar">
+            <nav class="sidebar-nav">
+                <button id="nav-dashboard" class="nav-item active">📊 <span data-i18n="nav_dashboard">Dashboard</span></button>
+                <button id="nav-meds" class="nav-item">💊 <span data-i18n="nav_meds">Medications</span></button>
+                <button id="nav-appointments" class="nav-item">📅 <span data-i18n="nav_appts">Appointments</span></button>
+                <button id="nav-handoff" class="nav-item">🔄 <span data-i18n="nav_handoff">Handoff Log</span></button>
+                <button id="nav-careplan" class="nav-item">📝 <span data-i18n="nav_careplan">Care Plan</span></button>
+                <button id="nav-approvals" class="nav-item relative">
+                    ⚖️ <span data-i18n="nav_approvals">AI Approvals</span>
+                    <span id="badge-pending-count" class="badge-count hidden">0</span>
+                </button>
+                <button id="nav-settings" class="nav-item">⚙️ <span data-i18n="nav_settings">Settings</span></button>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="app-main">
+            <!-- 1. Dashboard View -->
+            <section id="view-dashboard" class="content-view active">
+                <div class="view-header">
+                    <h2 data-i18n="dash_title">Daily Care State</h2>
+                    <p class="view-subtitle" data-i18n="dash_subtitle">Real-time status and active shift tracking</p>
+                </div>
+
+                <!-- Metrics Grid -->
+                <div class="metrics-grid">
+                    <div class="metric-card glow-blue">
+                        <div class="metric-icon">💊</div>
+                        <div class="metric-details">
+                            <h3 data-i18n="meds_due_today">Meds Due Today</h3>
+                            <p class="metric-value" id="dash-meds-count">0</p>
+                        </div>
+                    </div>
+                    <div class="metric-card glow-green">
+                        <div class="metric-icon">📅</div>
+                        <div class="metric-details">
+                            <h3 data-i18n="appts_48h">Appointments (48h)</h3>
+                            <p class="metric-value" id="dash-appts-count">0</p>
+                        </div>
+                    </div>
+                    <div class="metric-card glow-purple">
+                        <div class="metric-icon">🔄</div>
+                        <div class="metric-details">
+                            <h3 data-i18n="shift_status">Active Shift</h3>
+                            <p class="metric-value text-sm" id="dash-shift-status">Closed</p>
+                        </div>
+                    </div>
+                    <div class="metric-card glow-red">
+                        <div class="metric-icon">⚠️</div>
+                        <div class="metric-details">
+                            <h3 data-i18n="incidents_today">Incidents</h3>
+                            <p class="metric-value" id="dash-incidents-count">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shift Control Panel & Today Summary -->
+                <div class="dashboard-split">
+                    <!-- Shift Control -->
+                    <div class="panel-card">
+                        <h3 data-i18n="shift_control">Shift Operations</h3>
+                        
+                        <div id="shift-closed-panel" class="shift-panel-group">
+                            <p class="panel-desc" data-i18n="start_shift_desc">No active shift. Start a shift to log vitals, meals, and incidents.</p>
+                            <div class="form-group">
+                                <label for="input-caregiver-name" data-i18n="caregiver_name">Caregiver Name</label>
+                                <input type="text" id="input-caregiver-name" placeholder="e.g. Alice" class="form-control">
+                            </div>
+                            <button id="btn-start-shift" class="btn btn-primary btn-block" data-i18n="btn_start_shift">Start Shift</button>
+                        </div>
+
+                        <div id="shift-open-panel" class="shift-panel-group hidden">
+                            <p class="panel-desc"><span data-i18n="shift_active_label">Shift active:</span> <strong id="open-caregiver-label"></strong></p>
+                            
+                            <hr class="panel-divider">
+                            
+                            <!-- Logging Form -->
+                            <div class="log-form-grid">
+                                <div class="form-group">
+                                    <label for="log-vitals" data-i18n="label_vitals">Vitals (BP, pulse, temp)</label>
+                                    <input type="text" id="log-vitals" placeholder="120/80, 72bpm" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="log-mood" data-i18n="label_mood">Mood</label>
+                                    <input type="text" id="log-mood" placeholder="Calm, alert" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="log-meals" data-i18n="label_meals">Meals</label>
+                                    <input type="text" id="log-meals" placeholder="Breakfast all, lunch half" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="log-notes" data-i18n="label_notes">Notes / Observations</label>
+                                    <textarea id="log-notes" placeholder="Any details..." class="form-control" rows="2"></textarea>
+                                </div>
+                                <div class="form-group span-2">
+                                    <label for="log-incident" data-i18n="label_report_incident">Report Incident (Optional)</label>
+                                    <div class="incident-fields">
+                                        <select id="incident-kind" class="form-control">
+                                            <option value="" data-i18n="opt_no_incident">-- No Incident --</option>
+                                            <option value="fall" data-i18n="opt_fall">Fall</option>
+                                            <option value="confusion" data-i18n="opt_confusion">Confusion</option>
+                                            <option value="missed_meal" data-i18n="opt_missed_meal">Missed Meal</option>
+                                            <option value="medication_refusal" data-i18n="opt_med_refusal">Medication Refusal</option>
+                                            <option value="other" data-i18n="opt_other">Other</option>
+                                        </select>
+                                        <select id="incident-severity" class="form-control">
+                                            <option value="info">Info</option>
+                                            <option value="warning">Warning</option>
+                                            <option value="alert">Alert (Urgent)</option>
+                                        </select>
+                                        <input type="text" id="incident-desc" placeholder="Details..." class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="shift-actions">
+                                <button id="btn-save-log" class="btn btn-secondary" data-i18n="btn_save_log">Save Log Entry</button>
+                                <button id="btn-end-shift" class="btn btn-danger" data-i18n="btn_end_shift">End Shift</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Due Meds and Appointments list -->
+                    <div class="panel-card">
+                        <h3 data-i18n="up_activities">Scheduled for Today</h3>
+                        
+                        <div class="today-list">
+                            <h4 data-i18n="meds_due">Medications Due</h4>
+                            <div class="timeline-list" id="dash-meds-list">
+                                <!-- Loaded dynamically -->
+                            </div>
+
+                            <h4 data-i18n="appts_due">Upcoming Appointments</h4>
+                            <div class="timeline-list" id="dash-appts-list">
+                                <!-- Loaded dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. Medications View -->
+            <section id="view-meds" class="content-view">
+                <div class="view-header-split">
+                    <div>
+                        <h2 data-i18n="meds_title">Medication Management</h2>
+                        <p class="view-subtitle" data-i18n="meds_subtitle">Configure medication lists, doses, schedules, and active alerts</p>
+                    </div>
+                    <button id="btn-show-add-med" class="btn btn-primary">+ Add Medication</button>
+                </div>
+
+                <div class="table-container">
+                    <table class="app-table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="tbl_name">Name</th>
+                                <th data-i18n="tbl_dose">Dose</th>
+                                <th data-i18n="tbl_schedule">Schedule</th>
+                                <th data-i18n="tbl_instructions">Instructions</th>
+                                <th data-i18n="tbl_refill">Refill Alert</th>
+                                <th data-i18n="tbl_status">Status</th>
+                                <th data-i18n="tbl_actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="meds-table-body">
+                            <!-- Loaded dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Add Medication Modal -->
+                <div id="modal-add-med" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 data-i18n="modal_add_med_title">Add New Medication</h3>
+                            <button class="modal-close" id="btn-close-med-modal">&times;</button>
+                        </div>
+                        <form id="form-add-med">
+                            <div class="form-group">
+                                <label for="med-name" data-i18n="tbl_name">Medication Name</label>
+                                <input type="text" id="med-name" required placeholder="e.g. Atorvastatin" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="med-dose" data-i18n="tbl_dose">Dosage</label>
+                                <input type="text" id="med-dose" required placeholder="e.g. 20mg" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="med-times" data-i18n="med_times_label">Times (comma-separated HH:MM)</label>
+                                <input type="text" id="med-times" placeholder="e.g. 09:00, 21:00" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="med-instructions" data-i18n="tbl_instructions">Instructions</label>
+                                <input type="text" id="med-instructions" placeholder="e.g. Take with food" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="med-refill" data-i18n="med_refill_label">Refill Alert Threshold (Days Left)</label>
+                                <input type="number" id="med-refill" value="7" min="0" class="form-control">
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block" data-i18n="btn_save">Save Medication</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. Appointments View -->
+            <section id="view-appointments" class="content-view">
+                <div class="view-header-split">
+                    <div>
+                        <h2 data-i18n="appts_title">Medical Appointments</h2>
+                        <p class="view-subtitle" data-i18n="appts_subtitle">Coordinate therapy, consults, and clinical visits</p>
+                    </div>
+                    <div class="btn-group">
+                        <button id="btn-sync-ical" class="btn btn-secondary">🔄 Sync iCal</button>
+                        <button id="btn-show-add-appt" class="btn btn-primary">+ Add Appointment</button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="app-table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="tbl_date">Date & Time</th>
+                                <th data-i18n="tbl_provider">Provider</th>
+                                <th data-i18n="tbl_purpose">Purpose</th>
+                                <th data-i18n="tbl_location">Location</th>
+                                <th data-i18n="tbl_status">Status</th>
+                                <th data-i18n="tbl_actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="appts-table-body">
+                            <!-- Loaded dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Add Appointment Modal -->
+                <div id="modal-add-appt" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 data-i18n="modal_add_appt_title">Add Appointment</h3>
+                            <button class="modal-close" id="btn-close-appt-modal">&times;</button>
+                        </div>
+                        <form id="form-add-appt">
+                            <div class="form-group">
+                                <label for="appt-provider" data-i18n="tbl_provider">Provider / Doctor</label>
+                                <input type="text" id="appt-provider" required placeholder="e.g. Dr. Smith (Cardiology)" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="appt-at" data-i18n="tbl_date">Date & Time</label>
+                                <input type="datetime-local" id="appt-at" required class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="appt-purpose" data-i18n="tbl_purpose">Purpose</label>
+                                <input type="text" id="appt-purpose" placeholder="e.g. Standard consultation" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="appt-location" data-i18n="tbl_location">Location</label>
+                                <input type="text" id="appt-location" placeholder="e.g. Hospital Clinic, Room 4" class="form-control">
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block" data-i18n="btn_save">Save Appointment</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. Handoff Log View -->
+            <section id="view-handoff" class="content-view">
+                <div class="view-header">
+                    <h2 data-i18n="handoff_title">Handoff Shifts History</h2>
+                    <p class="view-subtitle" data-i18n="handoff_subtitle">Logs of past caregiver shifts and summaries</p>
+                </div>
+
+                <div class="timeline-container" id="handoff-history-timeline">
+                    <!-- Loaded dynamically -->
+                </div>
+
+                <!-- Shift Explainer Modal -->
+                <div id="modal-explain-shift" class="modal">
+                    <div class="modal-content modal-large">
+                        <div class="modal-header">
+                            <h3 id="explain-modal-title">AI Shift Summary</h3>
+                            <button class="modal-close" id="btn-close-explain-modal">&times;</button>
+                        </div>
+                        <div class="ai-summary-content" id="ai-summary-text">
+                            <!-- Summary text (markdown rendered) loads here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. Care Plan View -->
+            <section id="view-careplan" class="content-view">
+                <div class="view-header-split">
+                    <div>
+                        <h2 data-i18n="careplan_title">Patient Care Plan</h2>
+                        <p class="view-subtitle" data-i18n="careplan_subtitle">Shared clinical instructions and protocols</p>
+                    </div>
+                    <button id="btn-edit-careplan" class="btn btn-primary">✏️ Edit Care Plan</button>
+                </div>
+
+                <div class="panel-card careplan-card">
+                    <div id="careplan-display" class="markdown-body">
+                        <!-- Care Plan Markdown rendered as HTML -->
+                    </div>
+                    
+                    <div id="careplan-edit-container" class="hidden">
+                        <div class="form-group">
+                            <label for="careplan-markdown-input">Care Plan Guidelines (Markdown)</label>
+                            <textarea id="careplan-markdown-input" class="form-control" rows="18"></textarea>
+                        </div>
+                        <div class="form-actions mt-3">
+                            <button id="btn-save-careplan" class="btn btn-primary">Save Changes</button>
+                            <button id="btn-cancel-careplan" class="btn btn-secondary">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. AI Approvals View (Consent Gate) -->
+            <section id="view-approvals" class="content-view">
+                <div class="view-header">
+                    <h2 data-i18n="approvals_title">AI Agent Consent Gate</h2>
+                    <p class="view-subtitle" data-i18n="approvals_subtitle">Review and authorize pending write actions requested by the AI Copilot</p>
+                </div>
+
+                <div id="approvals-container" class="approvals-list">
+                    <!-- Dynamic List of approvals -->
+                </div>
+            </section>
+
+            <!-- 7. Settings View -->
+            <section id="view-settings" class="content-view">
+                <div class="view-header">
+                    <h2 data-i18n="settings_title">System Settings</h2>
+                    <p class="view-subtitle" data-i18n="settings_subtitle">Configure database connections, calendar subscriptions, and announcement bots</p>
+                </div>
+
+                <div class="settings-grid">
+                    <!-- Care Recipient Profile Settings -->
+                    <div class="panel-card">
+                        <h3 data-i18n="set_recipient_title">Care Recipient Details</h3>
+                        <form id="form-settings-recipient">
+                            <div class="form-group">
+                                <label for="set-recipient-name">Recipient Name</label>
+                                <input type="text" id="set-recipient-name" class="form-control" placeholder="Mom (Maria)" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="set-recipient-age">Age (Optional)</label>
+                                <input type="number" id="set-recipient-age" class="form-control" placeholder="78">
+                            </div>
+                            <div class="form-group">
+                                <label for="set-recipient-notes">Important Notes (Allergies, Medical Records ID)</label>
+                                <textarea id="set-recipient-notes" class="form-control" rows="3" placeholder="Penicillin allergy, Diabetic..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary" data-i18n="btn_save">Save Details</button>
+                        </form>
+                    </div>
+
+                    <!-- Integration Feeds -->
+                    <div class="panel-card">
+                        <h3 data-i18n="set_feeds_title">External Calendar Feeds</h3>
+                        <form id="form-settings-feeds">
+                            <div class="form-group">
+                                <label for="set-ical-urls">iCal Subscription URLs (comma-separated)</label>
+                                <textarea id="set-ical-urls" class="form-control" rows="3" placeholder="https://calendar.google.com/calendar/ical/..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary" data-i18n="btn_save">Save Feeds</button>
+                        </form>
+                    </div>
+
+                    <!-- Telegram Announcement Settings -->
+                    <div class="panel-card">
+                        <h3>Telegram Notification Adapter</h3>
+                        <form id="form-settings-telegram">
+                            <div class="form-group">
+                                <label for="set-tg-token">Telegram Bot Token</label>
+                                <input type="text" id="set-tg-token" class="form-control" placeholder="123456789:ABCdefGhIJKlmNoPQRsT">
+                            </div>
+                            <div class="form-group">
+                                <label for="set-tg-chat">Telegram Chat ID</label>
+                                <input type="text" id="set-tg-chat" class="form-control" placeholder="-100123456789">
+                            </div>
+                            <button type="submit" class="btn btn-primary" data-i18n="btn_save">Save Adapter</button>
+                        </form>
+                    </div>
+
+                    <!-- Email Announcement Settings -->
+                    <div class="panel-card">
+                        <h3>SMTP Email Alerts</h3>
+                        <form id="form-settings-email">
+                            <div class="form-group-split">
+                                <div class="form-group">
+                                    <label for="set-email-host">SMTP Host</label>
+                                    <input type="text" id="set-email-host" class="form-control" placeholder="smtp.gmail.com">
+                                </div>
+                                <div class="form-group">
+                                    <label for="set-email-port">SMTP Port</label>
+                                    <input type="text" id="set-email-port" class="form-control" placeholder="587">
+                                </div>
+                            </div>
+                            <div class="form-group-split">
+                                <div class="form-group">
+                                    <label for="set-email-user">Username</label>
+                                    <input type="text" id="set-email-user" class="form-control" placeholder="alerts@example.com">
+                                </div>
+                                <div class="form-group">
+                                    <label for="set-email-pass">Password</label>
+                                    <input type="password" id="set-email-pass" class="form-control" placeholder="••••••••••••">
+                                </div>
+                            </div>
+                            <div class="form-group-split">
+                                <div class="form-group">
+                                    <label for="set-email-from">From Address</label>
+                                    <input type="email" id="set-email-from" class="form-control" placeholder="alerts@example.com">
+                                </div>
+                                <div class="form-group">
+                                    <label for="set-email-to">To Address</label>
+                                    <input type="email" id="set-email-to" class="form-control" placeholder="family@example.com">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary" data-i18n="btn_save">Save Email Settings</button>
+                        </form>
+                    </div>
+
+                    <!-- Profiles & Team Settings -->
+                    <div class="panel-card span-2">
+                        <h3 data-i18n="set_profiles_title">Care Team Profiles</h3>
+                        <div class="team-profiles-container">
+                            <div class="profiles-list-table">
+                                <table class="app-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Role</th>
+                                            <th>Language</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="profiles-settings-table-body">
+                                        <!-- Loaded dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <hr class="panel-divider">
+
+                            <form id="form-settings-add-profile">
+                                <h4 data-i18n="add_team_member">Add Team Member</h4>
+                                <div class="profile-form-row">
+                                    <input type="text" id="new-profile-name" class="form-control" placeholder="Name" required>
+                                    <select id="new-profile-role" class="form-control">
+                                        <option value="caregiver">Caregiver</option>
+                                        <option value="admin">Admin</option>
+                                        <option value="viewer">Viewer</option>
+                                    </select>
+                                    <select id="new-profile-lang" class="form-control">
+                                        <option value="en">English (EN)</option>
+                                        <option value="ro">Română (RO)</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-primary">Add Member</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Notification system toast -->
+    <div id="app-toast" class="toast hidden"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
